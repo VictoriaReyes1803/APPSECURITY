@@ -43,6 +43,15 @@ class AuthController:
         return jsonify({'access_token': access_token}), 200
 
     @staticmethod
+    def logout():
+        data = request.get_json()
+        user = User.query.filter_by(email=data['email']).first()
+        user.state = False
+        db.session.commit()
+
+        return jsonify({'message':'Saliendo de tu cuenta...'}),200
+
+    @staticmethod
     def protected():
         return jsonify({'message': '¡Has accedido a un recurso protegido!'}), 200
 
@@ -53,6 +62,12 @@ class AuthController:
         return salt.hex(), hashed_password
 
 class MessageController:
+    @staticmethod
+    def get_active_users():
+        users = User.query.filter_by(state=data[True])
+        db.session.commit()
+        return jsonify({'usuarios': users}) 200
+
     @staticmethod
     def get_user_key(user_id):
         """ Obtener la clave de cifrado del usuario """
