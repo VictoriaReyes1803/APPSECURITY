@@ -1,4 +1,5 @@
 from flask import jsonify, request
+from flask_cors import CORS
 from cryptography.fernet import Fernet
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
 from app.models import SharedKey, User, db, Message
