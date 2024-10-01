@@ -13,6 +13,7 @@ class User(db.Model):
     salt = db.Column(db.String(32), nullable=False) 
     encryption_key = db.Column(db.String(128), nullable=False)
     state = db.Column(db.Boolean, default=False)
+    
 
     def __init__(self, username, email, password_hash, salt):
         self.username = username
@@ -32,3 +33,13 @@ class Message(db.Model):
 
     sender = db.relationship('User', foreign_keys=[sender_id])
     recipient = db.relationship('User', foreign_keys=[recipient_id])
+
+class SharedKey(db.Model):
+    __tablename__ = 'shared_keys'
+    id = db.Column(db.Integer, primary_key=True)
+    user1_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user2_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    key = db.Column(db.LargeBinary, nullable=False)
+
+    def __repr__(self):
+        return f'<SharedKey {self.user1_id} <-> {self.user2_id}>'

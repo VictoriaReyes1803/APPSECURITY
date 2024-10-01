@@ -1,11 +1,13 @@
 from flask import jsonify, request
 from cryptography.fernet import Fernet
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from app.models import User, db, Message
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
+from app.models import SharedKey, User, db, Message
+
 
 import hashlib
 import datetime
 import os
+
 
 class AuthController:
     @staticmethod
@@ -43,13 +45,18 @@ class AuthController:
         return jsonify({'access_token': access_token}), 200
 
     @staticmethod
+    @jwt_required()
     def logout():
-        data = request.get_json()
-        user = User.query.filter_by(email=data['email']).first()
+        current_user = get_jwt_identity()
+        user = User.query.get(current_user)
+        if user is None:
+            return jsonify({'message': 'Usuario no encontrado'}), 404
+        
         user.state = False
         db.session.commit()
 
-        return jsonify({'message':'Saliendo de tu cuenta...'}),200
+        return jsonify({'message': 'Saliendo de tu cuenta...'}), 200
+
 
     @staticmethod
     def protected():
@@ -63,18 +70,40 @@ class AuthController:
 
 class MessageController:
     @staticmethod
+    @jwt_required()
     def get_active_users():
-        users = User.query.filter_by(state=data[True])
-        db.session.commit()
-        return jsonify({'usuarios': users}) 200
+        users = User.query.filter_by(state=True).all() 
+        user_list = [{'id': user.id, 'name': user.username, 'email': user.email} for user in users]
+        
+        return jsonify({'usuarios': user_list}), 200
 
     @staticmethod
-    def get_user_key(user_id):
+    def get_shared_key(user1_id_, user2_id_):
+        """ Obtener o crear una clave compartida para dos usuarios. """
+        
+        user1_id = int(user1_id_)
+        user2_id = int(user2_id_)
+        if user1_id > user2_id:
+            user1_id, user2_id = user2_id, user1_id
+
+        shared_key_entry = SharedKey.query.filter_by(user1_id=user1_id, user2_id=user2_id).first()
+
+        if shared_key_entry:
+            return shared_key_entry.key
+
+        new_key = Fernet.generate_key()
+
+        new_shared_key = SharedKey(user1_id=user1_id, user2_id=user2_id, key=new_key)
+        db.session.add(new_shared_key)
+        db.session.commit()
+
+        return new_key
+    
+    
+    @staticmethod
+    def generate_key(user_id):
         """ Obtener la clave de cifrado del usuario """
-        user = User.query.get(user_id)
-        if user is None:
-            raise ValueError(f"No user found with id {user_id}")  
-        return user.encryption_key.encode('utf-8')  
+        return Fernet.generate_key()
 
     @staticmethod
     def encrypt_message(message, key):
@@ -95,15 +124,13 @@ class MessageController:
         current_user = get_jwt_identity()
         recipient_id = data['recipient_id']
 
-        try:
-            recipient_key = MessageController.get_user_key(recipient_id)
-        except ValueError as e:
-            return jsonify({'message': str(e)}), 404  
+        shared_key = MessageController.get_shared_key(current_user, recipient_id)
+        if shared_key is None:
+            return jsonify({'message': 'Error al obtener la clave compartida'}), 500
 
         # primera encriptacion vicky
-        encrypted_message = MessageController.encrypt_message(data['content'], recipient_key)
+        encrypted_message = MessageController.encrypt_message(data['content'], shared_key)
 
-        
         new_message = Message(
             sender_id=current_user,
             recipient_id=recipient_id,
@@ -120,21 +147,29 @@ class MessageController:
     def get_messages(user_id):
         current_user = get_jwt_identity()
 
-        # Obtener la clave del usuario actual para descifrar
-        user_key = MessageController.get_user_key(current_user)
+        shared_key = MessageController.get_shared_key(current_user, user_id)
+        if shared_key is None:
+            return jsonify({'message': 'Error al obtener la clave compartida'}), 500
         
         messages = Message.query.filter(
             ((Message.sender_id == current_user) & (Message.recipient_id == user_id)) |
             ((Message.sender_id == user_id) & (Message.recipient_id == current_user))
         ).all()
 
-        # Descifrar los mensajes
-        decrypted_messages = [{
-            'id': message.id,
-            'sender_id': message.sender_id,
-            'recipient_id': message.recipient_id,
-            'content': MessageController.decrypt_message(message.content, user_key),
-            'timestamp': message.timestamp.isoformat()
-        } for message in messages]
+        decrypted_messages = []
+        for message in messages:
+            try:
+                decrypted_content = MessageController.decrypt_message(message.content, shared_key)
+                decrypted_messages.append({
+                    'id': message.id,
+                    'sender_id': message.sender_id,
+                    'recipient_id': message.recipient_id,
+                    'content': decrypted_content,
+                    'timestamp': message.timestamp.isoformat()
+                })
+            except Exception as e:
+                print(f"Error al descifrar el mensaje {message.id}: {str(e)}")
+                continue
         
         return jsonify(decrypted_messages), 200
+
