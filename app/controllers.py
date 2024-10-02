@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import app, jsonify, request
 from flask_cors import CORS
 from cryptography.fernet import Fernet
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
@@ -11,6 +11,10 @@ import os
 
 
 class AuthController:
+    
+    @staticmethod
+    def options_login():
+        return jsonify({'message': 'Opciones para la ruta login'}), 200
     @staticmethod
     def register():
         data = request.get_json()
