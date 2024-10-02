@@ -11,7 +11,6 @@ def create_app():
     app = Flask(__name__)
     CORS(app)
     
-
     app.config.from_object(DevelopmentConfig)
     
     
@@ -20,6 +19,9 @@ def create_app():
     
     
     app.register_blueprint(routes)
+    print("Rutas registradas:")
+    for rule in app.url_map.iter_rules():
+        print(rule)
 
     
     with app.app_context():
