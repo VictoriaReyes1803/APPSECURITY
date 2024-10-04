@@ -2,7 +2,10 @@ from flask import app, jsonify, request
 from flask_cors import CORS
 from cryptography.fernet import Fernet
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
+from app.socket import socketio 
+
 from app.models import SharedKey, User, db, Message
+from flask_socketio import emit, join_room
 
 
 import hashlib
@@ -11,6 +14,9 @@ import os
 
 
 class AuthController:
+    def __init__(self):
+        from app.create_app import socketio
+ 
     
     @staticmethod
     def options_login():
@@ -74,6 +80,9 @@ class AuthController:
         return salt.hex(), hashed_password
 
 class MessageController:
+    def __init__(self):
+        from app.create_app import socketio
+        
     @staticmethod
     @jwt_required()
     def get_active_users():
@@ -121,6 +130,13 @@ class MessageController:
         """ Descifrar el mensaje con la clave del usuario """
         cipher_suite = Fernet(key)
         return cipher_suite.decrypt(encrypted_message).decode('utf-8')
+    
+    @socketio.on('connect')
+    def handle_connect():
+        current_user = get_jwt_identity()
+        join_room(str(current_user))  # El usuario se une a su propia sala usando su ID
+        print(f"Usuario {current_user} conectado y unido a su sala.")
+
 
     @staticmethod
     @jwt_required()
@@ -144,6 +160,12 @@ class MessageController:
         
         db.session.add(new_message)
         db.session.commit()
+        
+        socketio.emit('new_message', {
+            'sender_id': current_user,
+            'recipient_id': recipient_id,
+            'content': data['content']  
+        }, room=str(recipient_id))
         
         return jsonify({'message': 'Mensaje cifrado y enviado'}), 201
 
