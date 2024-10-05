@@ -27,7 +27,7 @@ class AuthController:
         if user is None:
             return jsonify({'message': 'Usuario no encontrado'}), 404
         
-        return jsonify({'id': user.id, 'username': user.username, 'email': user.email}), 200
+        return jsonify({'id': user.id, 'username': user.username, 'email': user.email, 'state': user.state}), 200
     
     @staticmethod
     def options_login():
@@ -64,7 +64,8 @@ class AuthController:
         access_token = create_access_token(identity=user.id, expires_delta=expires)
         
         
-        return jsonify({'access_token': access_token}), 200
+        return jsonify({'access_token': access_token,
+                        'id': user.id, 'username': user.username, 'email': user.email, 'state': user.state}), 200
 
     @staticmethod
     @jwt_required()
