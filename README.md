@@ -2,7 +2,7 @@
 APP SECURITY
 # hola tu gran amigo de flask te recomineda que ejecutes este comando para descargar todo lo que necesitas para trabajar en este proyecto y te conectes al entorno virtual que tenemos  crees un entorno virtual para evitar errores 
 
-# (en linux solo agrega source antes de la ruta i cambia \ por /)
+# (en linux solo agrega source antes de la ruta y cambia \ por /)
 # para conectarte a el entorno virtual en windows 
 # .venv\Scripts\activate 
 # para crear un entorno virtual 
