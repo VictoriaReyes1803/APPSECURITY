@@ -1,8 +1,8 @@
 # create_app.py
-
-from flask import Flask
 import eventlet
 eventlet.monkey_patch()
+from flask import Flask
+
 from app.config import DevelopmentConfig  
 from app.models import db
 from flask_cors import CORS

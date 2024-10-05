@@ -1,10 +1,10 @@
 #home.py
-
+import eventlet
+eventlet.monkey_patch()
 from flask import request
 from app import create_app
 from flask_socketio import SocketIO, emit, join_room, leave_room, rooms
-import eventlet
-eventlet.monkey_patch()
+
 app = create_app.create_app()
 socketio = SocketIO(app, cors_allowed_origins="*")
 
