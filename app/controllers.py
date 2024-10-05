@@ -12,11 +12,14 @@ import hashlib
 import datetime
 import os
 
+@socketio.on('join')
+def on_join(data):
+    user_id = data['userId']
+    join_room(str(user_id))
+    print(f"User {user_id} has joined the room")
 
 class AuthController:
-    def __init__(self):
-        from app.create_app import socketio
- 
+    
     
     @staticmethod
     def options_login():
@@ -131,12 +134,7 @@ class MessageController:
         cipher_suite = Fernet(key)
         return cipher_suite.decrypt(encrypted_message).decode('utf-8')
     
-    @socketio.on('connect')
-    def handle_connect():
-        current_user = get_jwt_identity()
-        join_room(str(current_user))  # El usuario se une a su propia sala usando su ID
-        print(f"Usuario {current_user} conectado y unido a su sala.")
-
+ 
 
     @staticmethod
     @jwt_required()
