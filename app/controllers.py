@@ -12,11 +12,7 @@ import hashlib
 import datetime
 import os
 
-@socketio.on('join')
-def on_join(data):
-    user_id = data['userId']
-    join_room(str(user_id))
-    print(f"User {user_id} has joined the room")
+
 
 class AuthController:
     @jwt_required()
@@ -60,7 +56,7 @@ class AuthController:
         user.state = True
         db.session.commit()
 
-        expires = datetime.timedelta(minutes=120)
+        expires = datetime.timedelta(hours=24)
         access_token = create_access_token(identity=user.id, expires_delta=expires)
         
         
@@ -98,7 +94,8 @@ class MessageController:
     @staticmethod
     @jwt_required()
     def get_active_users():
-        users = User.query.filter_by(state=True).all() 
+        current_user_id = get_jwt_identity()
+        users = User.query.filter_by(state=True).filter(User.id != current_user_id).all() 
         user_list = [{'id': user.id, 'name': user.username, 'email': user.email} for user in users]
         
         return jsonify({'usuarios': user_list}), 200
@@ -167,12 +164,6 @@ class MessageController:
         
         db.session.add(new_message)
         db.session.commit()
-        
-        socketio.emit('new_message', {
-            'sender_id': current_user,
-            'recipient_id': recipient_id,
-            'content': data['content']  
-        }, room=str(recipient_id))
         
         return jsonify({'message': 'Mensaje cifrado y enviado'}), 201
 
