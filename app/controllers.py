@@ -19,7 +19,15 @@ def on_join(data):
     print(f"User {user_id} has joined the room")
 
 class AuthController:
-    
+    @jwt_required()
+    @staticmethod
+    def me():
+        current_user = get_jwt_identity()
+        user = User.query.get(current_user)
+        if user is None:
+            return jsonify({'message': 'Usuario no encontrado'}), 404
+        
+        return jsonify({'id': user.id, 'username': user.username, 'email': user.email}), 200
     
     @staticmethod
     def options_login():
