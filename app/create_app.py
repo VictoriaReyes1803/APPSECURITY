@@ -8,7 +8,9 @@ from app.models import db
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from app.routes import routes
+from app.extensiones import mail
 from flask_socketio import SocketIO
+
 socketio = SocketIO(cors_allowed_origins="*")
 
 def create_app():
@@ -20,6 +22,7 @@ def create_app():
     app.config.from_object(DevelopmentConfig)
 
     db.init_app(app)
+    mail.init_app(app)
    
     with app.app_context():
         app.register_blueprint(routes)

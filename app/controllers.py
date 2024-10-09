@@ -1,9 +1,11 @@
-from flask import app, jsonify, request
+from flask import app, current_app, jsonify, render_template, request, url_for
 from flask_cors import CORS
 from cryptography.fernet import Fernet
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
+import jwt
 from app.socket import socketio 
-
+from flask_mail import Message as MailMessage
+from app.extensiones import mail
 from app.models import SharedKey, User, db, Message
 from flask_socketio import emit, join_room
 
@@ -38,8 +40,43 @@ class AuthController:
         db.session.add(new_user)
         db.session.commit()
 
+        token = jwt.encode({'user_id': new_user.id, 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1)},
+                           current_app.config['SECRET_KEY'], algorithm='HS256')
+
+        verification_link = f"http://localhost:5000/api/verify/{token}"
+        
+        msg = MailMessage(subject="Verificación de Correo",
+                      recipients=[data['email']],
+                      )
+       
+        
+        msg.html = render_template('verification_email.html', username=data['username'], verification_link=verification_link)
+        mail.send(msg)       
+        
         return jsonify({'message': 'Usuario registrado exitosamente'}), 201
 
+    @staticmethod
+    def verify(token):
+        try:
+
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+            user = User.query.get(data['user_id'])
+            
+            if not user:
+                return jsonify({'message': 'Usuario no encontrado'}), 404
+
+
+            user.state = True
+            db.session.commit()
+
+            return jsonify({'message': 'Cuenta verificada exitosamente'})
+        except jwt.ExpiredSignatureError:
+            return jsonify({'message': 'El enlace de verificación ha expirado'}), 400
+        except jwt.InvalidTokenError:
+            return jsonify({'message': 'El token es inválido'}), 400
+    
+    
+    
     @staticmethod
     def login():
         data = request.get_json()

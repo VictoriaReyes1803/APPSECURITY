@@ -13,6 +13,8 @@ class User(db.Model):
     salt = db.Column(db.String(32), nullable=False) 
     encryption_key = db.Column(db.String(128), nullable=False)
     state = db.Column(db.Boolean, default=False)
+   
+    is_active = db.Column(db.Boolean, default=False)
     
 
     def __init__(self, username, email, password_hash, salt):
