@@ -69,7 +69,7 @@ class AuthController:
             user.state = True
             db.session.commit()
 
-            return jsonify({'message': 'Cuenta verificada exitosamente'})
+            return render_template('verification_success.html', username=user.username)
         except jwt.ExpiredSignatureError:
             return jsonify({'message': 'El enlace de verificación ha expirado'}), 400
         except jwt.InvalidTokenError:
