@@ -94,7 +94,7 @@ class AuthController:
         if hashed_input_password != user.password_hash:
             return jsonify({'message': 'Credenciales incorrectas'}), 401
         
-        user.state = True
+        user.is_active = True
         db.session.commit()
 
         expires = datetime.timedelta(hours=24)
@@ -112,7 +112,7 @@ class AuthController:
         if user is None:
             return jsonify({'message': 'Usuario no encontrado'}), 404
         
-        user.state = False
+        user.is_active = False
         db.session.commit()
 
         return jsonify({'message': 'Saliendo de tu cuenta...'}), 200
