@@ -84,6 +84,10 @@ class AuthController:
 
         if not user:
             return jsonify({'message': 'Credenciales incorrectas'}), 401
+        
+        if user.state == False:
+            return jsonify({'message': 'Cuenta no verificada'}), 401    
+        
 
         hashed_input_password = hashlib.sha256(bytes.fromhex(user.salt) + data['password'].encode('utf-8')).hexdigest()
 

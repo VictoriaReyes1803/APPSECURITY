@@ -12,8 +12,6 @@ routes.add_url_rule('/protected', view_func=AuthController.protected, methods=['
 routes.add_url_rule('/api/user', view_func=AuthController.me, methods=['GET'])
 
 
-
-
 # Rutas de mensajería
 routes.add_url_rule('/api/messages', view_func=MessageController.send_message, methods=['POST'])
 routes.add_url_rule('/api/menu', view_func=MessageController.get_active_users, methods=['GET'])
